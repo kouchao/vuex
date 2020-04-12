@@ -10,6 +10,7 @@ export class Store {
     // Auto install if it is not done yet and `window` has `Vue`.
     // To allow users to avoid auto-installation in some cases,
     // this code should be placed here. See #731
+    // 自动安装
     if (!Vue && typeof window !== 'undefined' && window.Vue) {
       install(window.Vue)
     }
@@ -21,23 +22,42 @@ export class Store {
     }
 
     const {
+      /**
+       * 一个数组，包含应用在 store 上的插件方法。这些插件直接接收 store 作为唯一参数，可以监听 mutation（用于外部地数据持久化、记录或调试）或者提交 mutation （用于内部数据，例如 websocket 或 某些观察者）
+       * https://vuex.vuejs.org/zh/api/#plugins
+       */
       plugins = [],
+      /**
+       * 使 Vuex store 进入严格模式，在严格模式下，任何 mutation 处理函数以外修改 Vuex state 都会抛出错误。
+       * https://vuex.vuejs.org/zh/api/#strict
+       */
       strict = false
     } = options
 
     // store internal state
+    // !?用来判断严格模式下是否是用mutation修改state的
     this._committing = false
+    // 存放action
     this._actions = Object.create(null)
+    // !?存放actionSubscribers
     this._actionSubscribers = []
+    // 存放mutations
     this._mutations = Object.create(null)
+    // 存放getters
     this._wrappedGetters = Object.create(null)
+    // module收集器
     this._modules = new ModuleCollection(options)
+    // 根据namespace存放module
     this._modulesNamespaceMap = Object.create(null)
+    // 存放订阅者
     this._subscribers = []
+    // !?用以实现Watch的Vue实例
     this._watcherVM = new Vue()
+    // !?getters缓存
     this._makeLocalGettersCache = Object.create(null)
 
     // bind commit and dispatch to self
+    // 绑定this 将dispatch与commit调用的this绑定为store对象本身，否则在组件内部this.dispatch时的this会指向组件的vm
     const store = this
     const { dispatch, commit } = this
     this.dispatch = function boundDispatch (type, payload) {
@@ -48,6 +68,7 @@ export class Store {
     }
 
     // strict mode
+    // 严格模式(使 Vuex store 进入严格模式，在严格模式下，任何 mutation 处理函数以外修改 Vuex state 都会抛出错误)
     this.strict = strict
 
     const state = this._modules.root.state
@@ -55,15 +76,19 @@ export class Store {
     // init root module.
     // this also recursively registers all sub-modules
     // and collects all module getters inside this._wrappedGetters
+    // 初始化根module，这也同时递归注册了所有子modle，收集所有module的getter到_wrappedGetters中去，this._modules.root代表根module才独有保存的Module对象
     installModule(this, state, [], this._modules.root)
 
     // initialize the store vm, which is responsible for the reactivity
     // (also registers _wrappedGetters as computed properties)
+    // 通过vm重设store，新建Vue对象使用Vue内部的响应式实现注册state以及computed
     resetStoreVM(this, state)
 
     // apply plugins
+    // 调用插件
     plugins.forEach(plugin => plugin(this))
 
+    // devtool用到的
     const useDevtools = options.devtools !== undefined ? options.devtools : Vue.config.devtools
     if (useDevtools) {
       devtoolPlugin(this)
